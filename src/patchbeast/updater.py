@@ -68,14 +68,22 @@ def refresh_index() -> tuple[bool, str]:
 
 
 def check_updates(components: list[DetectedComponent]) -> list[ComponentUpdate]:
-    """Compare installed vs. candidate versions for apt-backed components."""
+    """Compare installed vs. candidate versions for apt-backed components.
+
+    Components whose installed version cannot be read from ``dpkg`` are
+    skipped: comparing an upstream version string against a Debian
+    revision (e.g. ``1.24.0`` vs ``1.24.0-1ubuntu1``) would report a
+    phantom update.
+    """
     updates: list[ComponentUpdate] = []
     for comp in components:
         pkg = comp.get("package")
         if not pkg or not comp.get("installed"):
             continue
         candidate = apt_candidate(pkg)
-        installed = apt_installed_version(pkg) or comp.get("version", "")
+        installed = apt_installed_version(pkg)
+        if not installed:
+            continue
         if candidate and candidate != installed:
             updates.append(
                 ComponentUpdate(
@@ -137,7 +145,9 @@ def update_all(components: list[DetectedComponent]) -> list[UpdateResult]:
         if not pkg or not comp.get("installed"):
             continue
         candidate = apt_candidate(pkg)
-        installed = apt_installed_version(pkg) or comp.get("version", "")
+        installed = apt_installed_version(pkg)
+        if not installed:
+            continue
         if candidate and candidate != installed:
             ok, text = update_package(pkg)
             results.append(UpdateResult(package=pkg, success=ok, output=text))

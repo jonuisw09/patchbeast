@@ -143,8 +143,7 @@ Example `config.json`:
   "schedule": "manual",
   "schedule_days": 30,
   "auto_update": false,
-  "dry_run": false,
-  "components": []
+  "dry_run": false
 }
 ```
 

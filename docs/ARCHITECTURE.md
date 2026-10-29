@@ -32,7 +32,7 @@ cron job.
 | Module | Responsibility | Must stay UI-free |
 |---|---|---|
 | `components.py` | Static registry (~90 components: binary, args, apt package) | yes |
-| `scanner.py` | `detect()`, `apt_candidate()`, `apt_installed_version()` | yes |
+| `scanner.py` | `detect()`, `cached_detect()`, `apt_candidate()`, `apt_installed_version()` | yes |
 | `updater.py` | `check_updates()`, `update_package()`, `list_upgradable()`, `upgrade_system()`, `SERVICE_MAP` | yes |
 | `scheduler.py` | `install()`, `remove()`, `status()`, `cron_expression()` | yes |
 | `config.py` | JSON config under `~/.config/patchbeast/` | yes |

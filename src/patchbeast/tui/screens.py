@@ -8,11 +8,12 @@ import time
 
 from .. import config
 from ..logo import LOGO
-from ..scanner import apt_candidate, detect
+from ..scanner import apt_candidate, cached_detect, detect, save_detection
 from ..scheduler import install as install_cron
 from ..scheduler import remove as remove_cron
 from ..scheduler import status as cron_status
 from ..updater import (
+    SERVICE_MAP,
     check_updates,
     list_upgradable,
     refresh_index,
@@ -46,6 +47,7 @@ def screen_scan(stdscr: curses.window) -> None:
     safe_addstr(stdscr, top, 2, "Scanning installed components...", curses.color_pair(1) | curses.A_BOLD)
     stdscr.refresh()
     comps = detect()
+    save_detection(comps)
     height, _ = stdscr.getmaxyx()
     row = top + 2
     for comp in comps:
@@ -66,7 +68,7 @@ def screen_components(stdscr: curses.window) -> None:
     top = _logo_bottom()
     safe_addstr(stdscr, top, 2, "Installed Components", curses.color_pair(1) | curses.A_BOLD)
     row = top + 2
-    comps = detect()
+    comps = cached_detect()
     height, _ = stdscr.getmaxyx()
     for comp in comps:
         candidate = ""
@@ -87,7 +89,7 @@ def screen_check(stdscr: curses.window) -> None:
     top = _logo_bottom()
     safe_addstr(stdscr, top, 2, "Checking for updates...", curses.color_pair(1) | curses.A_BOLD)
     stdscr.refresh()
-    comps = detect()
+    comps = cached_detect()
     refresh_index()
     updates = check_updates(comps)
     row = top + 2
@@ -120,11 +122,16 @@ def screen_apply(stdscr: curses.window) -> None:
     cfg = config.load()
     dry_run = cfg.get("dry_run", False)
     row = top
+    preview = check_updates(cached_detect())
+    services = sorted({SERVICE_MAP[u["package"]] for u in preview if u["package"] in SERVICE_MAP})
     if dry_run:
         safe_addstr(stdscr, row, 2, "Dry-run mode: no changes will be applied", curses.color_pair(3))
         row += 2
     else:
-        safe_addstr(stdscr, row, 2, "Apply updates? (y/n)", curses.color_pair(1) | curses.A_BOLD)
+        safe_addstr(stdscr, row, 2, f"Apply {len(preview)} updates? (y/n)", curses.color_pair(1) | curses.A_BOLD)
+        if services:
+            safe_addstr(stdscr, row + 1, 2, f"Services restarted: {', '.join(services)}", curses.color_pair(3))
+            row += 1
         stdscr.refresh()
         if stdscr.getch() not in (ord("y"), ord("Y")):
             return
@@ -133,7 +140,9 @@ def screen_apply(stdscr: curses.window) -> None:
     stdscr.refresh()
     refresh_index()
     row += 1
-    updates = check_updates(detect())
+    comps = detect()
+    save_detection(comps)
+    updates = check_updates(comps)
     height, _ = stdscr.getmaxyx()
     if not updates:
         safe_addstr(stdscr, row, 2, "No component updates.", curses.color_pair(2))

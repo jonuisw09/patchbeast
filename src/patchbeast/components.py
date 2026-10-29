@@ -48,7 +48,7 @@ COMPONENTS: list[Component] = [
     {"name": "cPanel", "command": "cat", "args": "/usr/local/cpanel/version", "package": None},
     {"name": "DirectAdmin", "command": "/usr/local/directadmin/directadmin", "args": "v", "package": None},
     {"name": "Webmin", "command": "webmin", "args": "--version", "package": "webmin"},
-    {"name": "Postfix", "command": "postfix", "args": "mail_version", "package": "postfix"},
+    {"name": "Postfix", "command": "postconf", "args": "mail_version", "package": "postfix"},
     {"name": "Dovecot", "command": "dovecot", "args": "--version", "package": "dovecot-core"},
     {"name": "Fail2ban", "command": "fail2ban-client", "args": "version", "package": "fail2ban"},
     {"name": "UFW", "command": "ufw", "args": "version", "package": "ufw"},

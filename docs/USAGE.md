@@ -50,10 +50,13 @@ Location: `~/.config/patchbeast/config.json`
   "schedule": "manual",
   "schedule_days": 30,
   "auto_update": false,
-  "dry_run": false,
-  "components": []
+  "dry_run": false
 }
 ```
+
+Detection results are cached for 5 minutes under
+`~/.config/patchbeast/cache/detection.json`, so TUI screens stay fast.
+`Scan System` and headless `--scan` always refresh the cache live.
 
 | Key | Meaning |
 |---|---|

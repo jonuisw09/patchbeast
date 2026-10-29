@@ -5,6 +5,22 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Detection results are cached under `~/.config/patchbeast/cache/`
+  (`cached_detect()`, 5-minute TTL): the TUI reuses them instead of
+  re-running ~90 version commands on every screen. `Scan System` and
+  headless `--scan` always refresh live.
+- Removed the dead `"components"` key from the default config (nothing
+  ever read it).
+- `check_updates()`/`update_all()` now skip components whose installed
+  version `dpkg` cannot report, instead of comparing an upstream version
+  against a Debian revision (phantom updates).
+- Postfix is detected via `postconf mail_version` (previously the
+  invalid `postfix mail_version`).
+- The Apply screen previews the update count and the services that will
+  restart before asking for confirmation.
+
 ### Added
 
 - `tests/` suite (scanner, updater, scheduler, config, version parsing) with

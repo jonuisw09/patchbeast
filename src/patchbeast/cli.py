@@ -7,7 +7,7 @@ import json
 import os
 
 from . import config
-from .scanner import detect
+from .scanner import detect, save_detection
 from .updater import check_updates, list_upgradable, update_all, upgrade_system
 from .utils import log
 
@@ -25,6 +25,7 @@ def headless_scan(dry_run: bool = False, report_path: str | None = None) -> None
     if dry_run:
         cfg["dry_run"] = True
     comps = detect()
+    save_detection(comps)
     updates = check_updates(comps)
     upgradable = list_upgradable()
     log(f"scan found {len(updates)} component updates and {len(upgradable)} system updates")

@@ -2,13 +2,29 @@
 
 from __future__ import annotations
 
+import json
+import os
 import shutil
+import time
 from typing import TypedDict
 
+from . import config
 from .components import COMPONENTS
 from .utils import parse_version, run
 
-__all__ = ["detect", "apt_candidate", "apt_installed_version"]
+__all__ = [
+    "detect",
+    "cached_detect",
+    "save_detection",
+    "load_detection",
+    "apt_candidate",
+    "apt_installed_version",
+]
+
+#: Default freshness window (seconds) for the on-disk detection cache.
+DEFAULT_CACHE_MAX_AGE = 300
+
+_CACHE_FILENAME = "detection.json"
 
 
 class DetectedComponent(TypedDict):
@@ -50,6 +66,50 @@ def detect() -> list[DetectedComponent]:
             )
         )
     return results
+
+
+def _cache_path() -> str:
+    config.ensure_dirs()
+    return os.path.join(config.CACHE_DIR, _CACHE_FILENAME)
+
+
+def save_detection(components: list[DetectedComponent]) -> None:
+    """Persist *components* to the on-disk detection cache."""
+    try:
+        with open(_cache_path(), "w", encoding="utf-8") as fh:
+            json.dump({"timestamp": time.time(), "components": components}, fh)
+    except OSError:
+        pass
+
+
+def load_detection(max_age_seconds: int = DEFAULT_CACHE_MAX_AGE) -> list[DetectedComponent] | None:
+    """Return the cached detection if fresher than *max_age_seconds*.
+
+    Returns ``None`` when the cache is missing, corrupt, or stale.
+    """
+    try:
+        with open(_cache_path(), encoding="utf-8") as fh:
+            payload = json.load(fh)
+        timestamp = float(payload.get("timestamp", 0))
+        if time.time() - timestamp > max_age_seconds:
+            return None
+        components = payload.get("components", [])
+        return components if isinstance(components, list) else None
+    except (OSError, ValueError, AttributeError):
+        return None
+
+
+def cached_detect(max_age_seconds: int = DEFAULT_CACHE_MAX_AGE) -> list[DetectedComponent]:
+    """Return cached detection when fresh, otherwise run live ``detect()``.
+
+    Live results are saved to the cache before returning.
+    """
+    cached = load_detection(max_age_seconds)
+    if cached is not None:
+        return cached
+    components = detect()
+    save_detection(components)
+    return components
 
 
 def apt_candidate(package: str | None) -> str:

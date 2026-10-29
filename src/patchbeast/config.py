@@ -30,7 +30,6 @@ class Config(TypedDict, total=False):
     schedule_days: int
     auto_update: bool
     dry_run: bool
-    components: list[str]
 
 
 DEFAULT_CONFIG: Config = {
@@ -38,7 +37,6 @@ DEFAULT_CONFIG: Config = {
     "schedule_days": 30,
     "auto_update": False,
     "dry_run": False,
-    "components": [],
 }
 
 

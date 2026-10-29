@@ -26,6 +26,13 @@ def test_check_updates_equal_versions(sample_components, monkeypatch) -> None:
     assert updater.check_updates(sample_components) == []
 
 
+def test_skips_when_dpkg_version_unknown(sample_components, monkeypatch) -> None:
+    """No dpkg version -> skip, never compare upstream vs Debian revision."""
+    monkeypatch.setattr(updater, "apt_candidate", lambda pkg: "1.24.0-1ubuntu1")
+    monkeypatch.setattr(updater, "apt_installed_version", lambda pkg: "")
+    assert updater.check_updates(sample_components) == []
+
+
 def test_list_upgradable_parses(monkeypatch) -> None:
     out = "Inst nginx [1.18.0] (1.24.0)\nInst curl [7.81.0] (8.0.0)\n"
     monkeypatch.setattr(updater, "run", lambda *a, **k: (0, out, ""))
