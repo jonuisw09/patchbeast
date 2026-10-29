@@ -1,8 +1,29 @@
 # PatchBeast
 
-PatchBeast is a terminal user interface (TUI) tool for Linux servers. It scans installed software components, compares installed versions against available updates, applies patched versions safely, restarts affected services, and can schedule recurring scans with cron.
+[![CI](https://github.com/jonuisw09/patchbeast/actions/workflows/ci.yml/badge.svg)](https://github.com/jonuisw09/patchbeast/actions/workflows/ci.yml)
+[![Python](https://img.shields.io/badge/python-%3E%3D3.9-blue.svg)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-No external dependencies. Standard library + `curses` only.
+Terminal patch manager for Linux servers. PatchBeast detects installed
+software components, compares versions against `apt`, applies patched
+versions safely, restarts affected services, and schedules recurring scans
+with cron.
+
+No external dependencies — standard library + `curses` only.
+
+## Contents
+
+- [Screenshots](#screenshots)
+- [Features](#features)
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Configuration](#configuration)
+- [Project structure](#project-structure)
+- [Development](#development)
+- [Limitations](#limitations)
+- [Security](#security)
+- [License](#license)
 
 ## Screenshots
 
@@ -24,99 +45,17 @@ No external dependencies. Standard library + `curses` only.
 
 ## Features
 
-- Detects 90+ server components: runtimes, web servers, databases, mail, security, monitoring, containers, IaC tools, control panels
+- Detects ~90 server components: runtimes, web servers, databases, mail,
+  security, monitoring, containers, IaC tools, control panels
 - Compares installed versions against `apt` candidates
 - Lists system-wide upgradable packages via simulated `apt-get upgrade`
 - Applies updates with `apt-get install -y --only-upgrade`
 - Restarts affected services after successful updates
 - Dry-run mode to plan without changing anything
-- JSON scan reports
+- JSON scan reports for automation
 - Cron scheduling: daily, weekly, monthly, custom interval
 - Headless `--scan` mode for cron and automation
-- English interface, `curses` based TUI
-- Config and logs under `~/.config/patchbeast/`
-
-## How it works
-
-1. **Detect**
-   Each component has a `command` + `args` pair. PatchBeast checks `shutil.which()`, runs the version command, and parses the version with a regex.
-
-2. **Check**
-   For components mapped to an `apt` package:
-   - Installed version: `dpkg-query -W`
-   - Candidate version: `apt-cache policy`
-   - If they differ, an update is reported.
-   - System packages: `apt-get -s upgrade` output lines starting with `Inst`.
-
-3. **Apply**
-   - `apt-get update` refreshes the index
-   - `apt-get install -y --only-upgrade <package>` installs the patched version
-   - `systemctl restart <service>` restarts the mapped service on success
-   - Every step is logged
-
-4. **Schedule**
-   - Root: writes `/etc/cron.d/patchbeast`
-   - Non-root: installs a user `crontab` entry
-   - Command run by cron: `patchbeast --scan`
-
-Service restart map:
-
-| Package | Service |
-|---|---|
-| php | php-fpm |
-| apache2 | apache2 |
-| nginx | nginx |
-| mariadb-server | mariadb |
-| postgresql | postgresql |
-| redis-server | redis-server |
-
-## Supported components
-
-Web servers and proxies:
-
-Apache, Nginx, Lighttpd, Caddy, Traefik, HAProxy, Varnish
-
-Databases and caches:
-
-MySQL Client, MariaDB, PostgreSQL, MongoDB, SQLite, ClickHouse, TimescaleDB, InfluxDB, CouchDB, Cassandra, Neo4j, Redis, KeyDB, Dragonfly, Memcached
-
-Runtimes and languages:
-
-PHP, Python, Node.js, npm, Java, Go, Ruby, Perl, Rust, Deno, Bun, Elixir, Erlang, Composer
-
-Mail:
-
-Postfix, Dovecot, Exim, SpamAssassin, Amavis
-
-Security:
-
-OpenSSL, Fail2ban, UFW, ClamAV
-
-Monitoring and observability:
-
-Grafana, Prometheus, Zabbix Agent, Nagios, Netdata, Uptime Kuma
-
-Message queues and search:
-
-Elasticsearch, RabbitMQ, Kafka
-
-Containers and orchestration:
-
-Docker, Podman, containerd, k3s, kubectl, Helm, Portainer
-
-CI and automation:
-
-Jenkins, GitLab Runner, Gitea, Drone, Ansible, Terraform, Packer, Vagrant, Puppet, Chef, Salt, Supervisor
-
-Control panels:
-
-Plesk, cPanel, DirectAdmin, Webmin, aaPanel, CyberPanel, Virtualmin, HestiaCP, Froxlor, ISPConfig, CWP
-
-Infrastructure:
-
-etcd, Consul, Vault, MinIO, Keepalived, Git, curl
-
-Components without an `apt` package mapping are detected and version-checked, but not auto-updated. Missing binaries are shown as `missing`.
+- Typed, tested codebase (`pytest`), linted (`ruff`), CI on every push
 
 ## Requirements
 
@@ -136,10 +75,10 @@ cd patchbeast
 patchbeast
 ```
 
-With pip:
+With pip (editable, with dev tools):
 
 ```bash
-python3 -m pip install .
+pip install -e ".[dev]"
 patchbeast
 ```
 
@@ -157,21 +96,21 @@ Interactive TUI:
 patchbeast
 ```
 
-Navigation:
-
-- `Up` / `Down` or `k` / `j`: move
-- `Enter`: select
-- `q`: back / quit
+| Keys | Action |
+|---|---|
+| `Up` / `Down` or `k` / `j` | Move selection |
+| `Enter` | Open the selected screen |
+| `q` | Back / quit |
 
 Menu:
 
-- `Scan System`: list installed / missing components
-- `View Components`: versions, apt package, candidate
-- `Check Updates`: component updates + system upgradable count
-- `Apply Updates`: update components, optionally upgrade system
-- `Schedule (Cron)`: daily / weekly / monthly / custom / remove
-- `View Logs`: last 30 log lines
-- `Settings`: toggle auto-update and dry-run
+- `Scan System` — installed / missing components
+- `View Components` — versions, `apt` package, candidate
+- `Check Updates` — component updates + system upgradable count
+- `Apply Updates` — update components, optionally upgrade system
+- `Schedule (Cron)` — daily / weekly / monthly / custom / remove
+- `View Logs` — last 30 log lines
+- `Settings` — toggle auto-update and dry-run
 - `Exit`
 
 Headless mode:
@@ -182,6 +121,9 @@ patchbeast --scan --dry-run
 patchbeast --scan --dry-run --report /tmp/report.json
 patchbeast --scan --report ~/.config/patchbeast/last_report.json
 ```
+
+Full usage guide: [`docs/USAGE.md`](docs/USAGE.md).
+Architecture overview: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ## Configuration
 
@@ -206,27 +148,37 @@ Example `config.json`:
 }
 ```
 
-Fields:
+| Key | Meaning |
+|---|---|
+| `auto_update` | Apply updates automatically in `--scan` mode |
+| `dry_run` | Plan only, never change the system |
+| `schedule`, `schedule_days` | Informational; the real schedule lives in cron |
 
-- `auto_update`: apply updates automatically in `--scan` mode
-- `dry_run`: plan only, never change the system
-- `schedule`, `schedule_days`: informational, cron itself holds the schedule
+Cron:
 
-## Cron scheduling
+| Choice | Expression |
+|---|---|
+| Daily | `0 2 * * *` |
+| Weekly | `0 2 * * 0` |
+| Monthly | `0 2 1 * *` |
+| Custom N days | `0 2 */N * *` |
+| Manual | Removes the job |
 
-From the TUI:
+Root installs `/etc/cron.d/patchbeast`; otherwise a user `crontab` entry
+tagged `# patchbeast-managed`. Cron runs `patchbeast --scan`.
 
-- `Daily`: `0 2 * * *`
-- `Weekly`: `0 2 * * 0`
-- `Monthly`: `0 2 1 * *`
-- `Custom days N`: `0 2 */N * *`
-- `Manual`: removes the job
+Service restart map:
 
-Root installs `/etc/cron.d/patchbeast`, otherwise a user crontab entry with the `# patchbeast-managed` marker.
+| Package | Service |
+|---|---|
+| `php` | `php-fpm` |
+| `apache2` | `apache2` |
+| `nginx` | `nginx` |
+| `mariadb-server` | `mariadb` |
+| `postgresql` | `postgresql` |
+| `redis-server` | `redis-server` |
 
-## Reports
-
-`--report` writes JSON:
+Reports (`--report`) write JSON:
 
 ```json
 {
@@ -243,40 +195,63 @@ Default path when omitted: `~/.config/patchbeast/last_report.json`.
 
 ```text
 src/patchbeast/
-  __init__.py
-  __main__.py
-  tui.py
-  scanner.py
-  updater.py
-  scheduler.py
-  config.py
-  utils.py
-  logo.py
-docs/screenshots/
+  __init__.py      # __version__ + public API
+  __main__.py      # thin python -m entry point
+  cli.py           # argparse + headless_scan()
+  components.py    # static component registry (~90 entries)
+  scanner.py       # detect(), apt_candidate(), apt_installed_version()
+  updater.py       # check/update/upgrade + SERVICE_MAP
+  scheduler.py     # cron install/remove/status
+  config.py        # JSON config under ~/.config/patchbeast/
+  utils.py         # run(), parse_version(), log(), ...
+  logo.py          # ASCII logo
+  tui/
+    app.py         # main menu loop + run_tui()
+    screens.py     # one screen per menu entry
+    widgets.py     # safe_addstr(), draw_logo(), pause()
+tests/             # pytest suite (all core modules)
+docs/
+  ARCHITECTURE.md
+  USAGE.md
+  screenshots/
+.github/workflows/ci.yml
+Makefile
+CHANGELOG.md
+CONTRIBUTING.md
 install.sh
 pyproject.toml
 ```
 
+## Development
+
+```bash
+make install   # pip install -e ".[dev]"
+make test      # compileall + pytest
+make lint      # ruff
+make run       # interactive TUI
+make scan      # headless dry-run
+```
+
+Contributions: see [`CONTRIBUTING.md`](CONTRIBUTING.md).
+Changelog: see [`CHANGELOG.md`](CHANGELOG.md).
+
 ## Limitations
 
-- Update backend is `apt` only
-- Components installed via `pip`, `npm -g`, `composer global`, binary installers, Docker images, or panel-specific updaters are detected but not auto-updated
-- `apt-get update`, upgrades, service restarts, and system cron require root or passwordless `sudo`
-- Package names follow Debian / Ubuntu conventions and may differ on other distros
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Keep changes small and without commented-out code
-4. Verify with `python3 -m compileall -q src`
-5. Test TUI with `patchbeast` and headless with `patchbeast --scan --dry-run`
-6. Open a pull request
+- Update backend is `apt` only.
+- Components installed via `pip`, `npm -g`, `composer global`, binary
+  installers, Docker images, or panel-specific updaters are detected but
+  not auto-updated.
+- `apt-get update`, upgrades, service restarts, and system cron require
+  root or passwordless `sudo`.
+- Package names follow Debian / Ubuntu conventions and may differ on
+  other distros.
 
 ## Security
 
-Do not run untrusted cron commands as root. Review `~/.config/patchbeast/patchbeast.log` after automated runs. Use dry-run first on production systems.
+Do not run untrusted cron commands as root. Review
+`~/.config/patchbeast/patchbeast.log` after automated runs. Use dry-run
+first on production systems.
 
 ## License
 
-MIT. See `LICENSE`.
+MIT. See [`LICENSE`](LICENSE).

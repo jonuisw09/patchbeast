@@ -1,3 +1,5 @@
+"""ASCII logo used by the TUI header."""
+
 LOGO = r"""
  ____       _       _     ____                 _
 |  _ \ __ _| |_ ___| |__ | __ )  ___  __ _ ___| |_
