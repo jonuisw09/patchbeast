@@ -130,7 +130,7 @@ Components without an `apt` package mapping are detected and version-checked, bu
 From source:
 
 ```bash
-git clone https://github.com/<your-user>/patchbeast.git
+git clone https://github.com/jonuisw09/patchbeast.git
 cd patchbeast
 ./install.sh
 patchbeast
